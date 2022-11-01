@@ -86,7 +86,7 @@ public class InboundService {
         return list;
     }
 
-    public void postRequest(JSONObject jsonObject, URL url) throws IOException {
+    public String postRequest(JSONObject jsonObject, URL url) throws IOException {
         HttpURLConnection http = (HttpURLConnection)url.openConnection();
         http.setRequestMethod("POST");
         http.setDoOutput(true);
@@ -101,8 +101,19 @@ public class InboundService {
         OutputStream stream = http.getOutputStream();
         stream.write(out);
 
+        BufferedReader br = null;
+        StringBuilder sb = null;
+        br = new BufferedReader(new InputStreamReader(http.getInputStream()));
+        sb = new StringBuilder();
+        String output;
+        while ((output = br.readLine()) != null) {
+            sb.append(output);
+        }
+
+//        System.out.println(sb.toString());
         System.out.println(http.getResponseCode() + " " + http.getResponseMessage());
         http.disconnect();
+        return sb.toString();
     }
 
 
@@ -117,10 +128,16 @@ public class InboundService {
         token = getAccessToken();
         JSONObject obj = new JSONObject(payload);
 
-        postRequest(obj, new URL("http://localhost:8094/api/location"));
+        String message = postRequest(obj, new URL("http://localhost:8094/api/location"));
+        JSONObject response = new JSONObject(message);
 
-        LogList list = getRequest(new URL("http://localhost:8095/api/log"));
-
-        return list.getLast().toString();
+        if (response.has("message")) {
+            return "No locations available";
+        } else {
+            return response.toString();
+        }
+//        LogList list = getRequest(new URL("http://localhost:8095/api/log"));
+//
+//        return list.getLast().toString();
     }
 }
